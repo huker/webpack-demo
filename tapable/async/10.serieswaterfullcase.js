@@ -10,7 +10,29 @@ class AsyncSeriesWaterfallHook {
     }
 
     callAsync(...args) {
-
+        let finishCallback = args.pop();
+        let index = 0;
+        // let next = (value) => {
+        //     this.task[index++](value, (err, value) => {
+        //         if (err || index === this.task.length) {
+        //             finishCallback();
+        //         } else {
+        //             next(value)
+        //         }
+        //     })
+        // };
+        // next(...args)
+        let next = (err, data) => {
+            let task = this.task[index];
+            if (!task) return finishCallback();
+            if (index === 0) {
+                task(...args, next)
+            } else {
+                task(data, next)
+            }
+            index++;
+        };
+        next(null, ...args);
     }
 }
 

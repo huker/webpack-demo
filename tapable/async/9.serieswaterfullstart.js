@@ -3,7 +3,7 @@ let { AsyncSeriesWaterfallHook } = require("tapable");
 /**
  * 异步串行
  * 上一个执行完了再执行下一个 按顺序的
- *
+ * 瀑布 上一个的值传到下一个
  */
 
 class Lesson {
