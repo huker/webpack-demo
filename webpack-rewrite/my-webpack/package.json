@@ -1,0 +1,14 @@
+{
+  "name": "my-webpack",
+  "version": "1.0.0",
+  "description": "",
+  "main": "my-webpack.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "my-webpack": "./bin/my-webpack.js"
+  },
+  "author": "",
+  "license": "ISC"
+}
