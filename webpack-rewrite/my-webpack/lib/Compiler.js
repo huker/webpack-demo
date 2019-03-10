@@ -14,6 +14,10 @@
  */
 let path = require('path');
 let fs = require('fs');
+let babylon = require('babylon');
+let traverse = require('@babel/traverse').default;
+let types = require('@babel/types');
+let generator = require('@babel/generator').default;
 
 class Compiler {
     //编译会传进来写的webpack.config.js配置
@@ -43,13 +47,32 @@ class Compiler {
      * @babel/traverse 遍历节点（遍历到对应的节点）
      * @babel/types 替换遍历到的节点
      * @babel/generator 替换好的结果生成
-     * traverse和generator是es6模块 引用的时候要reuqire('@babel/traverse').default 不然默认导出的是一个对象
+     * traverse和generator是es6模块 引用的时候要require('@babel/traverse').default 不然默认导出的是一个对象
      */
     parse(source, parentPath) {
-
+        let ast = babylon.parse(source);
+        let dependencies = [];
+        traverse(ast, {
+            CallExpression(p){
+                let node = p.node;
+                if (node.callee.name === 'require') {
+                    node.callee.name = '__webpack_require__';
+                    let moduleName = node.arguments[0].value;
+                    moduleName = moduleName + (path.extname(moduleName) ? '' : '.js');
+                    moduleName = './' + path.join(parentPath, moduleName);
+                    //按原本的格式 生成个stringLiteral塞进去
+                    node.arguments = [types.stringLiteral(moduleName)];
+                    //require的部分放进依赖 以判断是否继续往里解析
+                    dependencies.push(moduleName);
+                }
+            }
+        });
+        let sourceCode = generator(ast).code;
+        return { sourceCode, dependencies }
     }
 
     //构建模块 生成模块的依赖关系
+    //modulePath绝对路径 isEntry是否主入口
     buildModal(modulePath, isEntry) {
         //拿到模块内容
         let source = this.getSource(modulePath);
@@ -64,6 +87,12 @@ class Compiler {
         let { sourceCode, dependencies } = this.parse(source, path.dirname(moduleName)); // "./src"
         //获得改造后的源码 放进this.modules中 （把相对路径和模块中的内容对应起来）
         this.modules[moduleName] = sourceCode;
+        //有依赖 继续递归
+        if (dependencies && dependencies.length > 0) {
+            dependencies.forEach((dep) => {
+                this.buildModal(path.resolve(this.root, dep), false)
+            })
+        }
     }
 
     //发射文件
@@ -73,6 +102,8 @@ class Compiler {
 
     run() {
         this.buildModal(path.resolve(this.root, this.entry), true);
+
+        console.log(this.modules, this.entryId);
 
         this.emitFile();
     }
