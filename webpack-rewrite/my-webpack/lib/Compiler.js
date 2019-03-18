@@ -18,6 +18,7 @@ let babylon = require('babylon');
 let traverse = require('@babel/traverse').default;
 let types = require('@babel/types');
 let generator = require('@babel/generator').default;
+let ejs = require('ejs');
 
 class Compiler {
     //编译会传进来写的webpack.config.js配置
@@ -95,15 +96,25 @@ class Compiler {
         }
     }
 
-    //发射文件
+    /**
+     * 生成打包后的文件
+     * 写一个打包后文件的ejs模板 渲染模板 输出文件
+     */
     emitFile() {
-
+        //生成文件的path
+        let main = path.join(this.config.output.path, this.config.output.filename);
+        let templateBundle = this.getSource(path.join(__dirname, 'main.ejs'));
+        let code = ejs.render(templateBundle, {
+            entryId: this.entryId,
+            modules: this.modules
+        });
+        this.assets = {};
+        this.assets[main] = code;
+        fs.writeFileSync(main, this.assets[main])
     }
 
     run() {
         this.buildModal(path.resolve(this.root, this.entry), true);
-
-        console.log(this.modules, this.entryId);
 
         this.emitFile();
     }
