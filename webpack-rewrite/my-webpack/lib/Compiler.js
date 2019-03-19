@@ -34,9 +34,34 @@ class Compiler {
         this.root = process.cwd();
     }
 
-    //读文件
+    /**
+     * 读文件
+     * 读文件的时候，如果匹配到了rules里的test 则要过对应的loader
+     *
+     */
     getSource(modulePath) {
-        return fs.readFileSync(modulePath, 'utf-8');
+        let content = fs.readFileSync(modulePath, 'utf-8');
+        //首先拿到所有的rules
+        let rules = this.config.modules.rules;
+        rules.forEach((rule) => {
+            const { test, use } = rule;
+            //正则可以匹配到路径的话 通过loader转化这个模块
+            if (test.test(modulePath)) {
+                let idx = use.length - 1;
+
+                function normalLoader() {
+                    let loader = require(use[idx--]);
+                    content = loader(content);
+                    if (idx >= 0) {
+                        normalLoader(idx)
+                    }
+                }
+
+                normalLoader();
+            }
+        });
+
+        return content
     }
 
     /**
