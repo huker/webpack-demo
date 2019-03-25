@@ -4,6 +4,17 @@
 
 let path = require('path');
 
+//监听emit的plugin
+class Plugin1 {
+    apply(compiler) {
+        console.log("apply emit Plugin");
+        //compiler里会apply所有plugin 就注册了下面的事件
+        compiler.hooks.emit.tap('emit', () => {
+            console.log("emit")
+        })
+    }
+}
+
 module.exports = {
     mode: 'development',
     entry: './src/index.js',
@@ -21,5 +32,8 @@ module.exports = {
                 ]
             }
         ]
-    }
+    },
+    plugins: [
+        new Plugin1()
+    ]
 }

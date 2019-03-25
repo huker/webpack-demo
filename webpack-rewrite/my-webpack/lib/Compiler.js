@@ -19,6 +19,7 @@ let traverse = require('@babel/traverse').default;
 let types = require('@babel/types');
 let generator = require('@babel/generator').default;
 let ejs = require('ejs');
+let { SyncHook } = require('tapable');
 
 class Compiler {
     //编译会传进来写的webpack.config.js配置
@@ -32,6 +33,17 @@ class Compiler {
         this.entry = config.entry;
         //工作路径 为了拼接entry
         this.root = process.cwd();
+        //定义一些生命周期钩子
+        this.hooks = {
+            emit: new SyncHook()
+        };
+        let plugins = this.config.plugins;
+        if (plugins && Array.isArray(plugins)) {
+            plugins.forEach((plugin) => {
+                //this是compiler
+                plugin.apply(this);
+            })
+        }
     }
 
     /**
@@ -142,6 +154,8 @@ class Compiler {
         this.buildModal(path.resolve(this.root, this.entry), true);
 
         this.emitFile();
+
+        this.hooks.emit.call();
     }
 }
 
