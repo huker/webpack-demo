@@ -96,6 +96,7 @@ class Compiler {
                 if (node.callee.name === 'require') {
                     node.callee.name = '__webpack_require__';
                     let moduleName = node.arguments[0].value;
+                    //没有后缀的话加上后缀
                     moduleName = moduleName + (path.extname(moduleName) ? '' : '.js');
                     moduleName = './' + path.join(parentPath, moduleName);
                     //按原本的格式 生成个stringLiteral塞进去
